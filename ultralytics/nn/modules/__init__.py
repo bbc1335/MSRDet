@@ -39,7 +39,7 @@ from .block import (
     Fusion_2in,
     ALF,
     ECA,
-    MS_DCE,
+    HTEM,
     LCSPELAN4,
     C2fAttn,
     ImagePoolingAttn,

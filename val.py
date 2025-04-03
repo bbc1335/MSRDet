@@ -6,7 +6,7 @@ if __name__ == '__main__':
     model = YOLO('best.pt')
 
     # Customize validation settings
-    validation_results = model.val(data='ultralytics\\cfg\\datasets\\NEU-DET.yaml',
+    validation_results = model.val(data='NEU-DET.yaml',
                                 imgsz=224,
                                 batch=32,
                                 conf=0.001,

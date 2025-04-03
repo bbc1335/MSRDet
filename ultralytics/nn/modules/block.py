@@ -20,7 +20,7 @@ __all__ = (
     "InjectionMultiSum_Auto_pool",
     "Fusion_2in",
     "ALF",
-    "MS_DCE",
+    "HTEM",
     "HGBlock",
     "HGStem",
     "SPP",
@@ -785,9 +785,9 @@ class DCE(nn.Module):
         return x_out
 
 
-class MSDCEBranch(nn.Module):
+class HTEMBranch(nn.Module):
     def __init__(self, c1, c2, i):
-        super(MSDCEBranch, self).__init__()
+        super(HTEMBranch, self).__init__()
         self.branch1_0 = Conv(c1, c2, 1)
         self.branch1_1 = nn.Sequential(
             Conv(c2, c2, k=(1, i), p=(0, i // 2)),
@@ -867,27 +867,21 @@ class MSDCEBranch(nn.Module):
 #         return x_out
 
 
-class MS_DCE(nn.Module):
+class HTEM(nn.Module):
     # Revised from: Exploring Dense Context for Salient Object Detection, 2022, TCSVT
     def __init__(self, in_channel, out_channel):
-        super(MS_DCE, self).__init__()
+        super(HTEM, self).__init__()
         self.branch0 = Conv(in_channel // 2, in_channel // 2, 1)
 
-        self.branch1 = MSDCEBranch(in_channel // 2, in_channel, 3)
+        self.branch1 = HTEMBranch(in_channel // 2, in_channel, 3)
 
-        self.branch2 = MSDCEBranch(in_channel // 2, in_channel, 5)
+        self.branch2 = HTEMBranch(in_channel // 2, in_channel, 5)
 
-        self.branch3 = MSDCEBranch(in_channel // 2, in_channel, 7)
+        self.branch3 = HTEMBranch(in_channel // 2, in_channel, 7)
 
-        self.branch4 = MSDCEBranch(in_channel // 2, in_channel, 9)
+        self.branch4 = HTEMBranch(in_channel // 2, in_channel, 9)
 
         self.conv_cat = Conv(in_channel * 5 // 2, out_channel, 3, 1)
-
-        # self.weight0 = CBAM(in_channel//2)
-        # self.weight1 = CBAM(in_channel//2)
-        # self.weight2 = CBAM(in_channel//2)
-        # self.weight3 = CBAM(in_channel//2)
-        # self.weight4 = CBAM(in_channel//2)
 
     def forward(self, x):
         x = list(torch.chunk(x, 2, 1))
@@ -897,11 +891,6 @@ class MS_DCE(nn.Module):
         x3 = self.branch3([x2, x[1]])
         x4 = self.branch4([x3, x[1]])
 
-        # x0 = self.weight0(x0)
-        # x1 = self.weight1(x1)
-        # x2 = self.weight2(x2)
-        # x3 = self.weight3(x3)
-        # x4 = self.weight4(x4)
         x_cat = torch.cat((x0, x1, x2, x3, x4), dim=1)
         x_out = self.conv_cat(x_cat)
         return x_out
