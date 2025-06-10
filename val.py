@@ -3,7 +3,7 @@ from ultralytics import YOLO
 
 if __name__ == '__main__':
     # Load a model
-    model = YOLO('best.pt')
+    model = YOLO('runs/detect/NEU-DETTLFINet_mode300sz224bs322/weights/last.pt')
 
     # Customize validation settings
     validation_results = model.val(data='NEU-DET.yaml',

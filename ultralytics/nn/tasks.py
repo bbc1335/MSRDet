@@ -49,6 +49,7 @@ from ultralytics.nn.modules import (
     DCE,
     TEM,
     Fusion_2in,
+    FEM,
     InjectionMultiSum_Auto_pool,
     ALF,
     SequentialPolarizedSelfAttention,
@@ -922,7 +923,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             if c2 != nc:  # if c2 not equal to number of classes (i.e. for Classify() output)
                 c2 = make_divisible(min(c2, max_channels) * width, 8)
             args = [c1, c2, *args[1:]]
-        elif m in {Fusion_2in, ALF}:
+        elif m in {Fusion_2in, FEM, ALF}:
             c1, c2 = [ch[x] for x in f], make_divisible(min(args[0], max_channels) * width, 8)
             args = [c1, c2, *args[1:]]
         elif m in {HGStem, HGBlock}:

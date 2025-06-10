@@ -19,6 +19,7 @@ __all__ = (
     'TEM',
     "InjectionMultiSum_Auto_pool",
     "Fusion_2in",
+    "FEM",
     "ALF",
     "HTEM",
     "HGBlock",
@@ -946,6 +947,35 @@ class Fusion_2in(nn.Module):
         return out
 
 
+class FEM(nn.Module):
+    def __init__(self, c1, c2):
+        super().__init__()
+        self.q_embedding = Conv(c1[1], c2, 1)
+        self.k_embedding = Conv(c1[0], c2, 1)
+        self.v_embedding = Conv(c1[0], c2, 1)
+
+    def forward(self, x):
+        _, _, H1, W1 = x[0].shape
+        
+        x_q = F.interpolate(x[1], size=(H1, W1), mode='bilinear', align_corners=False)
+        x_q = self.q_embedding(x_q)
+        B, C, H, W = x_q.shape
+        x_q = x_q.view(B, C, -1)  # Flatten the spatial dimensions
+        
+        x_k = self.k_embedding(x[0]).view(B, C, -1)  # Flatten the spatial dimensions
+        x_k = x_k.permute(0, 2, 1)  # Change shape to (B, H*W, C)
+        
+        x_v = self.v_embedding(x[0]).view(B, C, -1)  # Flatten the spatial dimensions
+        x_v = x_v.permute(0, 2, 1)  # Change shape to (B, H*W, C)
+
+        atten = torch.matmul(x_k, x_q)  # Matrix multiplication for attention scores
+        atten = F.softmax(atten, dim=-1)  # Apply softmax to get attention weights
+        x_out = torch.matmul(atten, x_v)
+        x_out = x_out.permute(0, 2, 1).view(B, C, H, W)
+        
+        return x_out
+
+
 class ALF(nn.Module):
     def __init__(self, c1, c2):
         super().__init__()
@@ -959,22 +989,6 @@ class ALF(nn.Module):
         x_cat = torch.cat((x0, x1), dim=1)
         out = self.cat_conv(x_cat)
         return out
-
-
-# class Fusion_2in(nn.Module):
-#     def __init__(self, c1, c2):
-#         super().__init__()
-#         self.downmsample = nn.functional.adaptive_avg_pool2d
-#         self.cv1 = Conv(c1, c2, 1)
-#
-#     def forward(self, x):
-#         B, C, H, W = x[1].shape
-#         outputSize = (H // 2, W // 2)
-#         x0 = self.downmsample(x[0], outputSize)
-#         x1 = self.downmsample(x[1], outputSize)
-#         x2 = torch.cat((x0, x1), dim=1)
-#         x3 = self.cv1(x2)
-#         return x3
 
 
 class BottleneckCSP(nn.Module):

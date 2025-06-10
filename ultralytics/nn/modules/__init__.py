@@ -37,6 +37,7 @@ from .block import (
     C2fk,
     DFCA,
     Fusion_2in,
+    FEM,
     ALF,
     ECA,
     HTEM,
