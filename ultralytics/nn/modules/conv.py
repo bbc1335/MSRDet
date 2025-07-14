@@ -22,6 +22,7 @@ __all__ = (
     "SpatialAttention",
     "CBAM",
     "ECA",
+    "SE",
     "ELA",
     "SequentialPolarizedSelfAttention",
     "CoordAtt",
@@ -329,6 +330,42 @@ class SpatialAttention(nn.Module):
     def forward(self, x):
         """Apply channel and spatial attention on input for feature recalibration."""
         return x * self.act(self.cv1(torch.cat([torch.mean(x, 1, keepdim=True), torch.max(x, 1, keepdim=True)[0]], 1)))
+
+
+class SE(nn.Module):
+    """Squeeze-and-Excitation (SE) module."""
+
+    def __init__(self, c1, r=16):
+        """
+        初始化 SE 模块。
+
+        Args:
+            c1 (int): 输入通道数。
+            r (int): 缩减比例，默认为 16。
+        """
+        super().__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.fc = nn.Sequential(
+            nn.Linear(c1, c1 // r, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Linear(c1 // r, c1, bias=False),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        """
+        前向传播方法。
+
+        Args:
+            x (torch.Tensor): 输入特征图。
+
+        Returns:
+            torch.Tensor: 经过 SE 模块处理后的特征图。
+        """
+        b, c, _, _ = x.size()
+        y = self.avg_pool(x).view(b, c)
+        y = self.fc(y).view(b, c, 1, 1)
+        return x * y.expand_as(x)
 
 
 class CBAM(nn.Module):

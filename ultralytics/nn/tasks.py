@@ -49,12 +49,14 @@ from ultralytics.nn.modules import (
     DCE,
     TEM,
     Fusion_2in,
+    Fusion_2in_mod,
     FEM,
     InjectionMultiSum_Auto_pool,
     ALF,
     SequentialPolarizedSelfAttention,
     HTEM,
     CBAM,
+    SE,
     RepC3,
     RepConv,
     ResNetLayer,
@@ -912,7 +914,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
                 n = 1
         elif m is AIFI:
             args = [ch[f], *args]
-        elif m in {CBAM, ECA, SequentialPolarizedSelfAttention}:
+        elif m in {CBAM, ECA, SE, SequentialPolarizedSelfAttention}:
             c1 = args[0]
             if c1 != nc:  # if c2 not equal to number of classes (i.e. for Classify() output)
                 c1 = make_divisible(min(c1, max_channels) * width, 8)
@@ -923,7 +925,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             if c2 != nc:  # if c2 not equal to number of classes (i.e. for Classify() output)
                 c2 = make_divisible(min(c2, max_channels) * width, 8)
             args = [c1, c2, *args[1:]]
-        elif m in {Fusion_2in, FEM, ALF}:
+        elif m in {Fusion_2in, Fusion_2in_mod, FEM, ALF}:
             c1, c2 = [ch[x] for x in f], make_divisible(min(args[0], max_channels) * width, 8)
             args = [c1, c2, *args[1:]]
         elif m in {HGStem, HGBlock}:

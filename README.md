@@ -26,4 +26,4 @@ project/
 ```
 
 # Acknowledgments
-This repo is built upon [Ultralytics](https://github.com/ultralytics/ultralytics). Sincere thanks to their excellent work!
+This repo is built upon a very early version of [Ultralytics](https://github.com/ultralytics/ultralytics). Sincere thanks to their excellent work!

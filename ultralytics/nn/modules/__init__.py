@@ -37,6 +37,7 @@ from .block import (
     C2fk,
     DFCA,
     Fusion_2in,
+    Fusion_2in_mod,
     FEM,
     ALF,
     ECA,
@@ -76,6 +77,7 @@ from .conv import (
     GhostConv,
     LightConv,
     RepConv,
+    SE,
     SpatialAttention,
     SequentialPolarizedSelfAttention
 )

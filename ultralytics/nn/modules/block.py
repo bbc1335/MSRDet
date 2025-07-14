@@ -7,7 +7,7 @@ import torch.nn.functional as F
 
 import numpy as np
 
-from .conv import (Conv, DWConv, GhostConv, LightConv, RepConv, autopad, CBAM, ECA, CoordAtt, ELA,
+from .conv import (Conv, DWConv, GhostConv, LightConv, RepConv, autopad, h_sigmoid, CBAM, ECA, CoordAtt, ELA, SE, 
                    SequentialPolarizedSelfAttention, ChannelAttention, SpatialAttention)
 from .transformer import TransformerBlock
 
@@ -19,6 +19,7 @@ __all__ = (
     'TEM',
     "InjectionMultiSum_Auto_pool",
     "Fusion_2in",
+    "Fusion_2in_mod",
     "FEM",
     "ALF",
     "HTEM",
@@ -894,6 +895,7 @@ class HTEM(nn.Module):
 
         x_cat = torch.cat((x0, x1, x2, x3, x4), dim=1)
         x_out = self.conv_cat(x_cat)
+
         return x_out
 
 
@@ -947,12 +949,72 @@ class Fusion_2in(nn.Module):
         return out
 
 
+class Fusion_2in_mod(nn.Module):
+    def __init__(self, c1, c2):
+        super().__init__()
+        self.local_embedding = Conv(c1[0], c2, 1, act=False)
+        self.global_embedding = Conv(c1[1], c2, 1, act=False)
+        self.global_act = Conv(c1[1], c2, 1, act=False)
+        self.act = h_sigmoid()
+
+    def forward(self, x):
+        B, C, H, W = x[1].shape
+        x0 = F.interpolate(x[0], size=(H, W), mode='bilinear', align_corners=False)
+        x_l = self.local_embedding(x0)
+        
+        x_g = self.global_embedding(x[1])
+        x_g_act = self.global_act(x[1])
+
+        out = x_l * self.act(x_g_act) + x_g
+        return out
+
+
+class ChannelAttention(nn.Module):
+    def __init__(self, in_channels, reduction_ratio=16, pool_types=['avg', 'max']):
+        super(ChannelAttention, self).__init__()
+        self.in_channels = in_channels
+        self.pool_types = pool_types
+        
+        # 共享MLP层
+        self.mlp = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),  # 全局平均池化
+            nn.Conv2d(in_channels, in_channels // reduction_ratio, kernel_size=1, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels // reduction_ratio, in_channels, kernel_size=1, bias=False)
+        )
+        
+    def forward(self, x):
+        # 初始化注意力权重
+        attn = 0
+        
+        # 多池化策略融合
+        for pool_type in self.pool_types:
+            if pool_type == 'avg':
+                pool = F.adaptive_avg_pool2d(x, (1, 1))
+            elif pool_type == 'max':
+                pool = F.adaptive_max_pool2d(x, (1, 1))
+            else:  # 默认使用平均池化
+                pool = F.adaptive_avg_pool2d(x, (1, 1))
+                
+            # 应用共享MLP
+            pool_att = self.mlp(pool)
+            attn += pool_att
+        
+        # 生成注意力权重
+        scale = torch.sigmoid(attn)
+        
+        # 应用注意力
+        return x * scale
+
+
 class FEM(nn.Module):
     def __init__(self, c1, c2):
         super().__init__()
         self.q_embedding = Conv(c1[1], c2, 1)
         self.k_embedding = Conv(c1[0], c2, 1)
         self.v_embedding = Conv(c1[0], c2, 1)
+        
+        self.trans = Conv(c2, c2, 1)
 
     def forward(self, x):
         _, _, H1, W1 = x[0].shape
@@ -972,6 +1034,8 @@ class FEM(nn.Module):
         atten = F.softmax(atten, dim=-1)  # Apply softmax to get attention weights
         x_out = torch.matmul(atten, x_v)
         x_out = x_out.permute(0, 2, 1).view(B, C, H, W)
+        
+        x_out = self.trans(x_out) + x[0]
         
         return x_out
 

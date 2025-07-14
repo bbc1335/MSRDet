@@ -2,15 +2,16 @@ from ultralytics import YOLO
 
 if __name__ == '__main__':
     # Load a model
-    model = YOLO("runs/detect/NEU-DETTLFINet_mode300sz224bs323/weights/last.pt")  # build a new model from scratch
+    model = YOLO("TLFINet_mod.yaml")  # build a new model from scratch
 
     # Use the model
-    model.train(data="NEU-DET.yaml",
+    model.train(data="GC-DET.yaml",
                 epochs=300,
-                batch=32,
-                imgsz=224,
+                batch=16,
+                imgsz=512,
                 patience=150,
                 workers=8,
-                name='NEU-DETTLFINet_mode300sz224bs32',
-                resume=True,
-                close_mosaic=15)
+                name='新终改GC-DETTLFINet_mode300sz512bs16',
+                save_period=1,
+                resume=False,
+                close_mosaic=0)
