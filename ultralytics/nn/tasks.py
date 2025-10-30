@@ -45,9 +45,6 @@ from ultralytics.nn.modules import (
     HGStem,
     Pose,
     AConv,
-    RF,
-    DCE,
-    TEM,
     Fusion_2in,
     Fusion_2in_mod,
     FEM,
@@ -733,7 +730,7 @@ def torch_safe_load(weight):
                     "ultralytics.yolo.data": "ultralytics.data",
                 }
         ):  # for legacy 8.0 Classify and Pose models
-            ckpt = torch.load(file, map_location="cpu")
+            ckpt = torch.load(file, map_location="cpu", weights_only=False)
 
     except ModuleNotFoundError as e:  # e.name is missing module name
         if e.name == "models":
@@ -883,8 +880,6 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             AConv,
             C2fk,
             DFCA,
-            RF,
-            DCE,
             HTEM,
             RepNCSPELAN4,
             ADown,
@@ -920,11 +915,6 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
                 c1 = make_divisible(min(c1, max_channels) * width, 8)
             args = [c1, *args[1:]]
             c2 = c1
-        elif m is TEM:
-            c1, c2 = ch[f], args[0]
-            if c2 != nc:  # if c2 not equal to number of classes (i.e. for Classify() output)
-                c2 = make_divisible(min(c2, max_channels) * width, 8)
-            args = [c1, c2, *args[1:]]
         elif m in {Fusion_2in, Fusion_2in_mod, FEM, ALF}:
             c1, c2 = [ch[x] for x in f], make_divisible(min(args[0], max_channels) * width, 8)
             args = [c1, c2, *args[1:]]
