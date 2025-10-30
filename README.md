@@ -2,7 +2,7 @@
 
 ## 📖 Overview
 
-MSRDet is an advanced object detection framework built upon the Ultralytics YOLO architecture, specifically designed for steel surface defect detection. 
+MSRDet is an advanced object detection built upon the Ultralytics YOLO architecture, specifically designed for steel surface defect detection. 
 
 <!-- ## 🚀 Key Features
 
@@ -31,7 +31,7 @@ The MSRDet model incorporates several innovative components:
 ### Quick Start
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/MSRDet.git
+git clone https://github.com/bbc1335/MSRDet.git
 cd MSRDet
 
 # install in development mode for code modifications
